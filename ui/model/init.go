@@ -155,6 +155,27 @@ func (m Model) ResumeState() (path string, secs int, playlist string) {
 	return m.exitResume.path, m.exitResume.secs, m.exitResume.playlist
 }
 
+// ActiveSession returns the current provider key and an identifier suitable
+// for session restore. For radio providers, the ID is the current track's
+// path (the station URL). For other providers, the ID is the active provider
+// playlist ID. Returns empty strings when no track is playing.
+func (m Model) ActiveSession() (provider, id string) {
+	if m.provPillIdx < 0 || m.provPillIdx >= len(m.providers) {
+		return "", ""
+	}
+	key := m.providers[m.provPillIdx].Key
+	track, idx := m.playlist.Current()
+	if idx < 0 {
+		return key, m.activeProviderPlaylistID
+	}
+	switch key {
+	case "radio":
+		return key, track.Path
+	default:
+		return key, m.activeProviderPlaylistID
+	}
+}
+
 // ThemeName returns the current theme name.
 func (m Model) ThemeName() string {
 	if m.themeIdx < 0 || m.themeIdx >= len(m.themes) {
