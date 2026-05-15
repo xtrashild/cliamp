@@ -138,6 +138,13 @@ eq = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 # user_id = "optional-user-id"
 
 # ---
+# Radio (built-in station toggle)
+# Set enable_builtin = false to remove the default "cliamp radio" station
+# from the provider list. User-defined stations from radios.toml are unaffected.
+# [radio]
+# enable_builtin = true
+
+# ---
 # Emby server (optional)
 # Authenticate either with an API key or with your username/password.
 # user_id is optional and is discovered automatically when omitted.

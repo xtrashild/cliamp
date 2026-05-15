@@ -200,6 +200,11 @@ func (j JellyfinConfig) IsSet() bool {
 	return j.URL != "" && (j.Token != "" || (j.User != "" && j.Password != ""))
 }
 
+// RadioConfig holds settings for the built-in radio provider.
+type RadioConfig struct {
+	EnableBuiltin bool // include the built-in cliamp radio station (default true)
+}
+
 // EmbyConfig holds credentials for an Emby server.
 // URL is required. Authenticate either with Token, or with User+Password.
 // UserID is optional and can be discovered lazily.
@@ -249,6 +254,7 @@ type Config struct {
 	Emby               EmbyConfig                   // optional Emby server credentials
 	SoundCloud         SoundCloudConfig             // SoundCloud provider (opt-in via enabled = true)
 	NetEase            NetEaseConfig                // NetEase Cloud Music provider (opt-in via enabled = true)
+	Radio              RadioConfig                  // built-in radio station settings
 	Plugins            map[string]map[string]string // per-plugin config from [plugins.*] sections
 	LogLevel           string                       // log level: debug, info, warn, error (default "info")
 }
@@ -270,6 +276,7 @@ func defaultConfig() Config {
 		PaddingH:        3,
 		PaddingV:        1,
 		Spotify:         SpotifyConfig{Bitrate: 320},
+		Radio:           RadioConfig{EnableBuiltin: true},
 		LogLevel:        "info",
 	}
 }
@@ -412,6 +419,11 @@ func Load() (Config, error) {
 				cfg.Jellyfin.Password = parseString(val)
 			case "user_id":
 				cfg.Jellyfin.UserID = parseString(val)
+			}
+		case "radio":
+			switch key {
+			case "enable_builtin":
+				cfg.Radio.EnableBuiltin = strings.ToLower(val) != "false"
 			}
 		case "emby":
 			switch key {

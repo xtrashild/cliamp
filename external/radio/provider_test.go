@@ -10,7 +10,7 @@ func newTestProvider(t *testing.T) *Provider {
 	t.Helper()
 	// Point HOME at a temp dir so New() doesn't touch real state.
 	t.Setenv("HOME", t.TempDir())
-	return New()
+	return New(true)
 }
 
 func TestProviderNewHasBuiltinStation(t *testing.T) {
@@ -44,7 +44,7 @@ name = "Extra"
 url = "https://extra.example/stream"
 `)
 
-	p := New()
+	p := New(true)
 	infos, _ := p.Playlists()
 	if len(infos) < 2 {
 		t.Fatalf("expected builtin + extra, got %d", len(infos))

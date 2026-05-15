@@ -47,13 +47,14 @@ type station struct {
 	url  string
 }
 
-// New creates a Provider with the built-in station plus any user-defined
-// stations from ~/.config/cliamp/radios.toml and favorites.
-func New() *Provider {
-	p := &Provider{
-		stations: []station{
+// New creates a Provider with the built-in station (when enableBuiltin is true)
+// plus any user-defined stations from ~/.config/cliamp/radios.toml and favorites.
+func New(enableBuiltin bool) *Provider {
+	p := &Provider{}
+	if enableBuiltin {
+		p.stations = []station{
 			{name: builtinName, url: builtinURL},
-		},
+		}
 	}
 
 	dir, err := appdir.Dir()
