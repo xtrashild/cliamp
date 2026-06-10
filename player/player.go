@@ -179,14 +179,8 @@ func (p *Player) playPipeline(tp *trackPipeline) error {
 	var oldCurrent, oldNext *trackPipeline
 
 	if p.started {
-		// Lock the speaker so the goroutine finishes any in-progress Stream()
-		// call before we swap the source and unpause. The ctrl.Paused write
-		// must happen under the speaker lock because the audio thread reads it
-		// on every Stream() call.
-		speaker.Lock()
 		p.gapless.Replace(tp.stream)
 		p.ctrl.Paused = false
-		speaker.Unlock()
 	}
 
 	p.mu.Lock()
@@ -253,11 +247,7 @@ func (p *Player) PreloadYTDL(pageURL string, knownDuration time.Duration) error 
 
 // preloadPipeline queues a ready trackPipeline for gapless transition.
 func (p *Player) preloadPipeline(tp *trackPipeline) error {
-	// Lock speaker to atomically swap the gapless next stream, ensuring no
-	// in-flight transition reads from the old pipeline we're about to close.
-	speaker.Lock()
 	p.gapless.SetNext(tp.stream)
-	speaker.Unlock()
 
 	p.mu.Lock()
 	old := p.nextPipeline
@@ -271,12 +261,8 @@ func (p *Player) preloadPipeline(tp *trackPipeline) error {
 }
 
 // ClearPreload discards the preloaded next track (e.g., when shuffle/repeat changes).
-// Speaker is locked to ensure no in-flight gapless transition can reference the
-// pipeline we're about to close.
 func (p *Player) ClearPreload() {
-	speaker.Lock()
 	p.gapless.SetNext(nil)
-	speaker.Unlock()
 
 	p.mu.Lock()
 	old := p.nextPipeline
@@ -294,23 +280,13 @@ func (p *Player) GaplessAdvanced() bool {
 }
 
 // TogglePause toggles between paused and playing states.
-// When pausing, the speaker is suspended to save CPU; when unpausing
-// it is resumed so the audio callback drains the queued samples.
 func (p *Player) TogglePause() {
-	speaker.Lock()
 	if p.ctrl != nil {
 		p.ctrl.Paused = !p.ctrl.Paused
-		paused := p.ctrl.Paused
-		speaker.Unlock()
-		p.paused.Store(paused)
-		if paused {
-			p.suspendSpeaker()
-		} else {
-			p.resumeSpeaker()
-		}
-	} else {
-		speaker.Unlock()
+		p.paused.Store(p.ctrl.Paused)
+		return
 	}
+	p.paused.Store(false)
 }
 
 // Stop halts playback and releases resources. The speaker is suspended so
@@ -318,17 +294,11 @@ func (p *Player) TogglePause() {
 // silence. Resume is called automatically on the next Play().
 func (p *Player) Stop() {
 	p.stopGen.Add(1) // invalidate in-flight Play / PlayYTDL pipelines
-	// Lock speaker to ensure the goroutine finishes any in-progress Stream()
-	// call, then clear the source and pause. After unlock, the speaker will
-	// only see silence from the gapless streamer (paused ctrl).
-	speaker.Lock()
 	p.gapless.Clear()
 	if p.ctrl != nil {
 		p.ctrl.Paused = true
 	}
-	speaker.Unlock()
 
-	// Now safe to close decoder resources — speaker can't be reading them.
 	p.mu.Lock()
 	oldCurrent := p.current
 	oldNext := p.nextPipeline
@@ -559,8 +529,6 @@ func (p *Player) IsStreamSeek() bool {
 // decoder's sample-based position so the reported time is absolute within
 // the track, not relative to the reconnect point.
 func (p *Player) Position() time.Duration {
-	speaker.Lock()
-	defer speaker.Unlock()
 	p.mu.Lock()
 	cur := p.current
 	p.mu.Unlock()
@@ -575,8 +543,6 @@ func (p *Player) Position() time.Duration {
 // For HTTP streams where the decoder reports Len()==0, the metadata hint
 // stored at pipeline build time (knownDuration) is returned instead.
 func (p *Player) Duration() time.Duration {
-	speaker.Lock()
-	defer speaker.Unlock()
 	p.mu.Lock()
 	cur := p.current
 	p.mu.Unlock()
@@ -590,10 +556,8 @@ func (p *Player) Duration() time.Duration {
 }
 
 // PositionAndDuration returns both position and duration under a single
-// speaker lock, avoiding two separate lock acquisitions per tick.
+// p.mu lock, avoiding two separate lock acquisitions per tick.
 func (p *Player) PositionAndDuration() (time.Duration, time.Duration) {
-	speaker.Lock()
-	defer speaker.Unlock()
 	p.mu.Lock()
 	cur := p.current
 	p.mu.Unlock()

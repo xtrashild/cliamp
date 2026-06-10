@@ -108,9 +108,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		now := time.Time(msg)
 		dt := m.tickDelta(now)
 
-		// Cache expensive player state once per tick so View() render
-		// functions don't re-acquire speaker.Lock() multiple times.
-		// PositionAndDuration() batches both reads under one speaker lock.
+		// Cache player state once per tick so View() render functions
+		// don't re-query the player multiple times.
+		// PositionAndDuration() batches both reads under one lock.
 		if !m.buffering {
 			if m.seek.active {
 				m.cachedPos = m.seek.targetPos
