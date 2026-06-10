@@ -192,6 +192,17 @@ user_id = "your-account-user-id"
 
 Once enabled, the provider shows your liked songs, created playlists, saved playlists, and public charts. Search works with `Ctrl+F`, and playback uses `yt-dlp` with the same browser cookie source.
 
+## Built-in Radio Station
+
+The Radio provider includes a default "cliamp radio" station (`https://radio.cliamp.stream/streams.m3u`) that is always present unless explicitly disabled.
+
+```toml
+[radio]
+enable_builtin = false
+```
+
+Setting `enable_builtin = false` removes the built-in station from the provider list. User-defined stations from `radios.toml`, favorites, and catalog stations from Radio Browser are unaffected.
+
 ## Custom Radio Stations
 
 Add your own stations to `~/.config/cliamp/radios.toml`:

@@ -63,7 +63,7 @@ func run(overrides config.Overrides, positional []string, daemon bool) error {
 	}
 
 	// Build provider list: Radio is always available, Navidrome and Spotify if configured.
-	radioProv := radio.New()
+	radioProv := radio.New(cfg.Radio.EnableBuiltin)
 	localProv := local.New()
 
 	var providers []model.ProviderEntry
@@ -208,7 +208,8 @@ func run(overrides config.Overrides, positional []string, daemon bool) error {
 			return fmt.Errorf("playlist %q: %w", cfg.Playlist, err)
 		}
 		pl.Add(tracks...)
-	} else if defaultRadio {
+		cfg.AutoPlay = true
+	} else if defaultRadio && cfg.Radio.EnableBuiltin && !sessionRestored {
 		pl.Add(
 			playlist.Track{Path: "http://radio.cliamp.stream/lofi/stream", Title: "Lofi Stream", Stream: true},
 			playlist.Track{Path: "http://radio.cliamp.stream/synthwave/stream", Title: "Synthwave Stream", Stream: true},

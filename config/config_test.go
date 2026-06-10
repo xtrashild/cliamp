@@ -49,6 +49,9 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.Mono {
 		t.Error("Mono should be false by default")
 	}
+	if !cfg.Radio.EnableBuiltin {
+		t.Error("Radio.EnableBuiltin should be true by default")
+	}
 }
 
 func TestClampVolume(t *testing.T) {
