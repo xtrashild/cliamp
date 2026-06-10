@@ -27,6 +27,7 @@ import (
 	"cliamp/internal/appmeta"
 	"cliamp/internal/playback"
 	"cliamp/internal/resume"
+	"cliamp/internal/session"
 	"cliamp/ipc"
 	"cliamp/luaplugin"
 	"cliamp/mediactl"
@@ -202,6 +203,23 @@ func run(overrides config.Overrides, positional []string, daemon bool) error {
 	defaultRadio := len(positional) == 0 && defaultProvider == "radio"
 
 	pl := playlist.New()
+
+	// Session restore: if enabled, no CLI arguments given, and a previous
+	// session exists, load the saved provider and track and auto-play.
+	var sessionRestored bool
+	if len(positional) == 0 && cfg.RestoreLastSession {
+		if s := session.Load(); s.Provider == "radio" && s.ID != "" {
+			if id, ok := radioProv.StationIDByURL(s.ID); ok {
+				if tracks, err := radioProv.Tracks(id); err == nil {
+					pl.Add(tracks...)
+					cfg.AutoPlay = true
+					defaultProvider = "radio"
+					sessionRestored = true
+				}
+			}
+		}
+	}
+
 	if cfg.Playlist != "" && localProv != nil {
 		tracks, err := localProv.Tracks(cfg.Playlist)
 		if err != nil {
@@ -454,6 +472,9 @@ func run(overrides config.Overrides, positional []string, daemon bool) error {
 		if path, secs, pl := fm.ResumeState(); path != "" && secs > 0 {
 			resume.Save(path, secs, pl)
 		}
+
+		prov, id := fm.ActiveSession()
+		session.Save(prov, id)
 	}
 
 	return nil

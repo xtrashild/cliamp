@@ -43,6 +43,11 @@ eq_preset = "Flat"
 # Only used when eq_preset is "Custom" or empty
 eq = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
+# Restore the last listening session on launch (provider + station/playlist).
+# When enabled, cliamp reopens the provider you were using and resumes playback
+# of the last station or playlist without requiring CLI arguments.
+# restore_last_session = true
+
 # Default provider on startup: "radio", "navidrome", "spotify", "plex", "jellyfin", "emby", "soundcloud", "netease", or a YouTube provider
 # provider = "radio"
 

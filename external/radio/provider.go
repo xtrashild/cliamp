@@ -219,6 +219,31 @@ func (p *Provider) SetSearchResults(stations []CatalogStation) {
 	p.searchResults = stations
 }
 
+// StationIDByURL returns the position-based station ID (e.g. "l:2", "f:0", "c:5")
+// for the given station URL. Searches local stations first, then favorites,
+// then catalog entries. Returns ("", false) when no match is found.
+func (p *Provider) StationIDByURL(url string) (string, bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	for i, s := range p.stations {
+		if s.url == url {
+			return fmt.Sprintf("l:%d", i), true
+		}
+	}
+	for i, s := range p.favorites.Stations() {
+		if s.URL == url {
+			return fmt.Sprintf("f:%d", i), true
+		}
+	}
+	for i, s := range p.catalog {
+		if s.URL == url {
+			return fmt.Sprintf("c:%d", i), true
+		}
+	}
+	return "", false
+}
+
 // ClearSearch deactivates search mode, restoring the catalog view.
 func (p *Provider) ClearSearch() {
 	p.mu.Lock()

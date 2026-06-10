@@ -482,6 +482,8 @@ func Load() (Config, error) {
 				cfg.Mono = val == "true"
 			case "auto_play":
 				cfg.AutoPlay = val == "true"
+			case "restore_last_session":
+				cfg.RestoreLastSession = val == "true"
 			case "seek_large_step_sec":
 				if v, err := strconv.Atoi(val); err == nil {
 					cfg.SeekStepLarge = v

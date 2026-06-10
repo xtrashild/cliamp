@@ -45,6 +45,9 @@ shuffle = false
 # Start with mono output (L+R downmix)
 mono = false
 
+# Restore the last listening session on launch (provider + station/playlist)
+restore_last_session = true
+
 # Initial directory for the file browser ('o' key)
 initial_directory = "~/Music"
 
@@ -132,6 +135,18 @@ provider = "radio"
 Valid values: `radio` (default), `navidrome`, `spotify`, `plex`, `jellyfin`, `emby`, `soundcloud`, `netease`, `yt`, `youtube`, `ytmusic`.
 
 You can also override from the CLI: `cliamp --provider jellyfin`.
+
+## Session Restore
+
+Save and restore your last listening session across restarts. When enabled, cliamp remembers which provider you were using and what was playing, then resumes automatically on the next launch — no CLI arguments needed.
+
+```toml
+restore_last_session = true
+```
+
+Currently supported providers: **Radio**. When you quit while listening to a radio station, cliamp saves the station URL. On restart, it switches to the Radio provider and auto-plays the same station.
+
+Session data is saved to `~/.config/cliamp/session.json` on exit. This is separate from `resume.json`, which saves per-track playback position for seekable media (local files, podcasts).
 
 ## SoundCloud
 
