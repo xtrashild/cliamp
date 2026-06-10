@@ -54,6 +54,7 @@ type Player struct {
 
 	gaplessAdvance atomic.Bool  // set when gapless transition fires
 	seekGen        atomic.Int64 // generation counter for yt-dlp seeks; incremented to cancel stale seeks
+	stopGen        atomic.Int64 // incremented on Stop(); checked in Play/PlayYTDL to discard stale pipelines
 
 	streamTitle      atomic.Value               // stores string, set by ICY reader callback
 	customFactories  map[string]StreamerFactory // URI scheme prefix -> factory (e.g. "spotify:" -> fn)
@@ -116,17 +117,24 @@ func New(q Quality) (*Player, error) {
 // knownDuration is the metadata duration (use 0 if unknown); it is used as a
 // fallback when the decoder cannot determine the length (e.g. HTTP streams).
 func (p *Player) Play(path string, knownDuration time.Duration) error {
+	buildGen := p.stopGen.Load() // snapshot before slow build
 	tp, err := p.buildPipeline(path)
 	if err != nil {
 		return err
 	}
 	tp.setKnownDuration(knownDuration)
+	if p.stopGen.Load() != buildGen {
+		// Stop() was called while building the pipeline — discard.
+		tp.close()
+		return nil
+	}
 	return p.playPipeline(tp)
 }
 
 // PlayYTDL starts playing a yt-dlp page URL via a piped yt-dlp | ffmpeg chain.
 // Playback starts as soon as the first PCM samples arrive (~1-3s). Not seekable.
 func (p *Player) PlayYTDL(pageURL string, knownDuration time.Duration) error {
+	buildGen := p.stopGen.Load() // snapshot before slow build
 	// Probe duration concurrently with pipeline setup so it doesn't delay playback.
 	probeCh := make(chan time.Duration, 1)
 	if knownDuration == 0 {
@@ -135,6 +143,11 @@ func (p *Player) PlayYTDL(pageURL string, knownDuration time.Duration) error {
 	tp, err := p.buildYTDLPipeline(pageURL, 0)
 	if err != nil {
 		return err
+	}
+	if p.stopGen.Load() != buildGen {
+		// Stop() was called while building the pipeline — discard.
+		tp.close()
+		return nil
 	}
 	if knownDuration == 0 {
 		// The probe ran concurrently with buildYTDLPipeline. Try to
@@ -304,6 +317,7 @@ func (p *Player) TogglePause() {
 // the ALSA audio callback goroutine blocks (zero CPU) instead of streaming
 // silence. Resume is called automatically on the next Play().
 func (p *Player) Stop() {
+	p.stopGen.Add(1) // invalidate in-flight Play / PlayYTDL pipelines
 	// Lock speaker to ensure the goroutine finishes any in-progress Stream()
 	// call, then clear the source and pause. After unlock, the speaker will
 	// only see silence from the gapless streamer (paused ctrl).

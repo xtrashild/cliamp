@@ -534,6 +534,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case streamPlayedMsg:
 		m.buffering = false
+		if m.cancelBuffering {
+			m.cancelBuffering = false
+			return m, nil
+		}
 		if msg.err != nil {
 			m.err = msg.err
 			if track, idx := m.playlist.Current(); idx >= 0 {
@@ -563,6 +567,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case ytdlResolvedMsg:
 		m.buffering = false
+		if m.cancelBuffering {
+			m.cancelBuffering = false
+			return m, nil
+		}
 		if msg.err != nil {
 			m.err = msg.err
 			return m, nil

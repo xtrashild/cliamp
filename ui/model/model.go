@@ -212,8 +212,9 @@ type Model struct {
 	visVolumeLinked bool // when true, samples are scaled by volume gain before FFT
 
 	// Async stream buffering (true while HTTP connect is in progress)
-	buffering   bool
-	bufferingAt time.Time // when buffering started, for elapsed display
+	buffering       bool
+	bufferingAt     time.Time // when buffering started, for elapsed display
+	cancelBuffering bool      // set by spacebar while buffering; suppresses stale stream messages
 
 	// resume holds the path and position to seek to when the matching track
 	// starts playing. Cleared after the seek is performed.

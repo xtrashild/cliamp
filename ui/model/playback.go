@@ -181,6 +181,7 @@ func (m *Model) playTrack(track playlist.Track) tea.Cmd {
 
 	m.reconnect.attempts = 0
 	m.reconnect.at = time.Time{}
+	m.cancelBuffering = false
 	m.streamTitle = ""
 	m.lyrics.lines = nil
 	m.lyrics.err = nil
@@ -244,6 +245,9 @@ func (m *Model) playTrack(track playlist.Track) tea.Cmd {
 // playing stale data sitting in OS/decoder buffers from before the pause.
 func (m *Model) togglePlayPause() tea.Cmd {
 	if m.buffering {
+		m.cancelBuffering = true
+		m.player.Stop()
+		m.buffering = false
 		return nil
 	}
 	if !m.player.IsPlaying() {
